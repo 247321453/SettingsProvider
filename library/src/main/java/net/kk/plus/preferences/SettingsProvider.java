@@ -8,13 +8,17 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.util.Log;
+import android.widget.RemoteViews;
 
 import net.kk.plus.ISettingsManager;
 import net.kk.plus.compact.BundleCompat;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,9 +78,13 @@ public class SettingsProvider extends ContentProvider {
     @Override
     public Bundle call(String method, String arg, Bundle extras) {
         if (Method_GetSettingsManager.equals(method)) {
+            Uri uri = null;
+            if (extras != null && extras.containsKey(URI_VALUE)) {
+                uri = Uri.parse(extras.getString(URI_VALUE));
+            }
             Bundle bundle = new Bundle();
             BundleCompat.putBinder(bundle, Arg_Binder, new SettingsManager(
-                    getSharedPreferences(arg)));
+                    getContext(), arg, uri, getSharedPreferences(arg)));
             return bundle;
         }
         return null;
@@ -84,12 +92,21 @@ public class SettingsProvider extends ContentProvider {
 
     public static final String Method_GetSettingsManager = "getSettingsManager";
     public static final String Arg_Binder = "_binder_";
+    public static final String URI_KEY = "key";
+    public static final String URI_VALUE = "uri";
 
-    private class SettingsManager extends ISettingsManager.Stub {
+    private static class SettingsManager extends ISettingsManager.Stub {
+        private Context mContext;
         private final SharedPreferences mSharedPreferences;
+        private final String mPrefName;
+        private final Uri mUri;
 
-        public SettingsManager(SharedPreferences sharedPreferences) {
+        public SettingsManager(Context context, String name, Uri uri, SharedPreferences sharedPreferences) {
+            mContext = context;
             mSharedPreferences = sharedPreferences;
+            mPrefName = name;
+            mUri = uri;
+
         }
 
         @Override
@@ -100,6 +117,7 @@ public class SettingsProvider extends ContentProvider {
         @Override
         public void clear(String key) throws RemoteException {
             mSharedPreferences.edit().remove(key).apply();
+            onChangedValue(key);
         }
 
         @Override
@@ -146,29 +164,39 @@ public class SettingsProvider extends ContentProvider {
             return res;
         }
 
+        private void onChangedValue(String key) {
+            Uri uri = mUri.buildUpon().appendPath(mPrefName).appendQueryParameter(URI_KEY, key).build();
+            mContext.getContentResolver().notifyChange(uri, null);
+        }
+
         @Override
         public void putBoolean(String key, boolean def) throws RemoteException {
             mSharedPreferences.edit().putBoolean(key, def).apply();
+            onChangedValue(key);
         }
 
         @Override
         public void putFloat(String key, float def) throws RemoteException {
             mSharedPreferences.edit().putFloat(key, def).apply();
+            onChangedValue(key);
         }
 
         @Override
         public void putInt(String key, int def) throws RemoteException {
             mSharedPreferences.edit().putInt(key, def).apply();
+            onChangedValue(key);
         }
 
         @Override
         public void putLong(String key, long def) throws RemoteException {
             mSharedPreferences.edit().putLong(key, def).apply();
+            onChangedValue(key);
         }
 
         @Override
         public void putString(String key, String def) throws RemoteException {
             mSharedPreferences.edit().putString(key, def).apply();
+            onChangedValue(key);
         }
 
         @Override
@@ -178,6 +206,44 @@ public class SettingsProvider extends ContentProvider {
                 res.addAll(def);
             }
             mSharedPreferences.edit().putStringSet(key, res).apply();
+            onChangedValue(key);
+        }
+
+        @Override
+        public List<String> getKeys() throws RemoteException {
+            Set<String> keys = mSharedPreferences.getAll().keySet();
+            return new ArrayList<>(keys);
+        }
+
+        @Override
+        public Bundle getAll() throws RemoteException {
+            Bundle bundle = new Bundle();
+            Map<String, ?> map = mSharedPreferences.getAll();
+            if (map != null) {
+                Iterator<? extends Map.Entry<String, ?>> iterator = map.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, ?> e = iterator.next();
+                    Object value = e.getValue();
+                    if (value instanceof Integer) {
+                        bundle.putInt(e.getKey(), (Integer) value);
+                    } else if (value instanceof Float) {
+                        bundle.putFloat(e.getKey(), (Float) value);
+                    } else if (value instanceof Long) {
+                        bundle.putLong(e.getKey(), (Long) value);
+                    } else if (value instanceof Boolean) {
+                        bundle.putBoolean(e.getKey(), (Boolean) value);
+                    } else if (value instanceof String) {
+                        bundle.putString(e.getKey(), (String) value);
+                    } else if (value instanceof Set) {
+                        try {
+                            bundle.putStringArrayList(e.getKey(), new ArrayList<String>((Set<String>) value));
+                        } catch (Exception ex) {
+                            //ignore
+                        }
+                    }
+                }
+            }
+            return bundle;
         }
     }
 }

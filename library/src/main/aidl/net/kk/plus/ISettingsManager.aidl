@@ -20,4 +20,7 @@ interface ISettingsManager {
     void putLong(String key, long def);
     void putString(String key, String def);
     void putStringArrayList(String key,in List<String> def);
+
+    Bundle getAll();
+    List<String> getKeys();
 }
