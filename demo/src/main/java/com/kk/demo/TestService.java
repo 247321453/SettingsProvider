@@ -20,6 +20,12 @@ public class TestService extends Service {
         sharedPreferences = new SettingsPreference(this, "test");
         sharedPreferences.edit().putString("hello", "?").apply();
         sharedPreferences.edit().putBoolean("test", false).apply();
+        sharedPreferences.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
+            @Override
+            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                Log.i("kk", "service:changed:" + key);
+            }
+        });
     }
 
     @Override
