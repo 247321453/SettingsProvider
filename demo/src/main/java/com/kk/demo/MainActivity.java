@@ -1,6 +1,7 @@
 package com.kk.demo;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,13 +23,10 @@ public class MainActivity extends Activity {
                 Log.i("kk", "changed:" + key);
             }
         });
-        sharedPreferences.edit().putString("hello", "?").apply();
-        sharedPreferences.edit().putBoolean("test", false).apply();
         Set<String> list=new ArraySet<>();
         list.add("1");
         sharedPreferences.edit().putStringSet("list", list).apply();
-
-        Log.i("kk", "all:" + sharedPreferences.getAll());
+        startService(new Intent(this, TestService.class));
     }
 
 }
