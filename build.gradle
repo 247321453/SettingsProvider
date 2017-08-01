@@ -2,6 +2,9 @@
 
 buildscript {
     repositories {
+        maven{
+            url 'http://192.168.1.74:8081/repository/maven-releases/'
+        }
         jcenter()
     }
     dependencies {
@@ -15,6 +18,9 @@ ext {
 }
 allprojects {
     repositories {
+        maven{
+            url 'http://192.168.1.74:8081/repository/maven-releases/'
+        }
         jcenter()
     }
 }

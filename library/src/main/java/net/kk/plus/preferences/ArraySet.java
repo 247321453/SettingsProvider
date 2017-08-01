@@ -254,6 +254,7 @@ public final class ArraySet<E> implements Collection<E>, Set<E> {
     /**
      * Ensure the array map can hold at least <var>minimumCapacity</var>
      * items.
+     * @param minimumCapacity min
      */
     public void ensureCapacity(int minimumCapacity) {
         if (mHashes.length < minimumCapacity) {
@@ -368,7 +369,7 @@ public final class ArraySet<E> implements Collection<E>, Set<E> {
     /**
      * Special fast path for appending items to the end of the array without validation.
      * The array must already be large enough to contain the item.
-     * @hide
+     * @param value
      */
     public void append(E value) {
         final int index = mSize;
